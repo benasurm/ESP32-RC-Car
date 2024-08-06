@@ -1,12 +1,16 @@
 #include "../include/SerialIO/serial_io.h"
 #include "../include/WiFiConnection/wifi_conn.h"
 #include "../include/HTTPServer/http_server.h"
+#include "../include/Motors/motors.h"
 
 void setup() 
 {
     // Start Serial IO with 115200 baud rate
     Serial.begin(115200);
     SerialIO::PrintLn(boot_ok_msg);
+
+    // Initialize motors
+    InitializeMotors();
 
     // Begin Wifi connection process
     ConnectToWifi();

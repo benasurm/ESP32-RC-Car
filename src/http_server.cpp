@@ -157,7 +157,6 @@ void ExtractAxisValues(char *http_msg_body)
         }
         // Set new PWM values
         SetNewPWMValues(temp, count);
-        PrintPWMValues();
     }
 }
 
@@ -176,7 +175,7 @@ esp_err_t AxisHandler(httpd_req_t* req)
     if(recv > 0)
     {
         // Print HTTP message contents to Serial (debugging reasons)
-        SerialIO::PrintLn(print_http_req_msg);
+        //SerialIO::PrintLn(print_http_req_msg);
         //SerialIO::PrintLn(http_msg_body);
         ExtractAxisValues(http_msg_body);
     }

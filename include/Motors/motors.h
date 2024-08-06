@@ -4,6 +4,7 @@
 #include "../FieldValue/field_value.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <Arduino.h>
 
 // Constants
 
@@ -24,6 +25,8 @@ struct
 
 // Functionality methods
 
+void InitializeMotors();
 void SetNewPWMValues(FieldValue field_val[], int len);
 void ValidatePWMValue(int &value);
 void PrintPWMValues();
+void ApplyPWMValues();
