@@ -2,6 +2,7 @@
 #include "esp_camera.h"
 #include "../include/SerialIO/serial_io.h"
 #include <Arduino.h>
+#include "esp_timer.h"
 
 // ESP32 AI_THINKER Pin Map
 
@@ -74,8 +75,7 @@ camera_config_t camera_config =
     .jpeg_quality = 15,
     .fb_count = 1,
     .fb_location = CAMERA_FB_IN_DRAM,
-    .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
-
+    .grab_mode = CAMERA_GRAB_LATEST
 };
 
 esp_err_t CameraInit()
@@ -103,3 +103,104 @@ void PrintInitRes(esp_err_t &init_res)
             break;
     }
 }
+
+size_t ConvertTokB(size_t &len)
+{
+    return len / 8000;
+}
+
+size_t ConvertToms(size_t &begin, size_t &end)
+{
+    return (end - begin) / 1000;
+}
+
+esp_err_t CaptureHandler(httpd_req_t *req)
+{
+    // Declaration of pointer to the camera frame buffer
+    camera_fb_t *fb = NULL;
+    // Declaration of HTTP Response result
+    esp_err_t resp_res;
+    // Size of the JPG image in the frame buffer
+    size_t fb_len = 0;
+    // Save the starting time of capture
+    int64_t begin_time = esp_timer_get_time();
+
+    // A shitty hack to fix frame buffer storing old images
+    fb = esp_camera_fb_get();
+    esp_camera_fb_return(fb);
+    fb = NULL;
+    fb = esp_camera_fb_get();
+    if(!fb)
+    {
+        SerialIO::PrintLn(err_500_msg);
+        httpd_resp_send_500(req);
+        esp_camera_fb_return(fb);
+        return ESP_FAIL;
+    }
+    SerialIO::PrintLn(capture_ok_msg);
+
+    // Setting 'Content-Type' header to 'image/jpeg' 
+    resp_res = httpd_resp_set_type(req, img_ct);
+    // Checking result of operation
+    switch (resp_res)
+    {
+        case ESP_OK:
+            SerialIO::PrintLn(hdr_set_ok_msg);
+            break;
+        default:
+            PrintResultCode(resp_res);
+            esp_camera_fb_return(fb);
+            httpd_resp_send_500(req);
+            return ESP_FAIL;
+    }
+
+    // Setting 'Content-Type' header to 'image/jpeg' 
+    resp_res = httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    // Checking result of operation
+    switch (resp_res)
+    {
+        case ESP_OK:
+            SerialIO::PrintLn(hdr_set_ok_msg);
+            break;
+        default:
+            PrintResultCode(resp_res);
+            esp_camera_fb_return(fb);
+            httpd_resp_send_500(req);
+            return ESP_FAIL;
+    }
+    
+    if(fb->format == PIXFORMAT_JPEG)
+    {
+        resp_res = httpd_resp_send(req, (const char *)fb->buf, fb->len);
+        switch (resp_res)
+        {
+            case ESP_OK:
+                SerialIO::PrintLn(pkt_sent_ok_msg);
+                fb_len = fb->len;
+                break;
+            default:
+                PrintResultCode(resp_res);
+                httpd_resp_send_500(req);
+                esp_camera_fb_return(fb);
+                return ESP_FAIL;
+        }
+    }
+    else
+    {
+        SerialIO::PrintLn(inv_img_format_msg);
+        httpd_resp_send_500(req);
+        esp_camera_fb_return(fb);
+        return ESP_FAIL;
+    }
+
+    // Return camera buffer to free memory
+    esp_camera_fb_return(fb);
+
+    // Stop the timer, print sent data size and duration to Serial
+    int64_t end_time = esp_timer_get_time();
+
+    // Format and print result message
+    ESP_LOGI(TAG, "JPG packet sent: %uKb; %u ms", ConvertTokB(fb_len), ConvertToms(begin_time, end_time));
+    return ESP_OK;
+}
+

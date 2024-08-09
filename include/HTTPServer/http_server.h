@@ -11,6 +11,13 @@
 const size_t motor_val_msg_size = 32;
 const char http_body_delim[] = "=&";
 
+// Server handle enumeration (flag)
+enum ServerHandleFlag
+{
+    PAGE,
+    CAPTURE
+};
+
 
 // Result messages
 
@@ -35,8 +42,9 @@ const char conn_url_msg[] = "** To access controls, connect to: http://";
 
 void PrintResultCode(esp_err_t &result);
 void StartHTTPServer();
+void InitializeServer(esp_err_t &result, httpd_uri_t handlers[], size_t count, const ServerHandleFlag &handle_flag);
+void RegisterHandlers(httpd_uri_t handlers[], size_t count, const ServerHandleFlag &handle_flag);
 void PrintRecvResult(httpd_req_t* req, size_t recv_size);
 void PrintRespResult(httpd_req_t* req, int resp_res);
 void ExtractAxisValues(char *http_msg_body);
-esp_err_t AxisHandler(httpd_req_t* req);
 esp_err_t IndexHandler(httpd_req_t* req);

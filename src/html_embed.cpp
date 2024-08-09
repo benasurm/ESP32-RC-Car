@@ -208,13 +208,13 @@ char const *root_html = R"raw(<!DOCTYPE html>
                     {
                         if(!response.ok)
                         {
-                            throw new Error('** Error in HTTP POST request: ' + response.status);
+                            console.error('** Error in HTTP POST request: ' + response.status);
                         }
                         return response.statusText;
                     })
                     .then((data) =>
                     {
-                        console.log(data);
+                        //console.log(data);
                     })
                     .catch((error) =>
                     {
@@ -227,15 +227,66 @@ char const *root_html = R"raw(<!DOCTYPE html>
                 UpdateValueLabel(axis_id, value_label_id);
                 MotorSpeedRequest();
             }
+
+            function FetchJPGCapture()
+            {
+                var domain = window.location.origin;
+                var port = 81;
+                var url = domain + ":" + port + "/jpg_capture";
+                const jpg_capture_req = fetch(
+                    url,
+                    {
+                        method: 'GET'   
+                    }
+                );
+
+                jpg_capture_req
+                    .then((response) =>
+                    {
+                        if(!response.ok)
+                        {
+                            console.error("** Error in HTTP GET request: " + response.status)
+                        }
+                        const content_type = response.headers.get('Content-Type');
+                        if(!content_type || !content_type.includes('image/jpeg'))
+                        {
+                            console.error("** HTTP JPEG GET invalid response type: {$content_type}");
+                        }
+                        return response.blob();
+                    })
+                    .then((data) =>
+                    {
+                        // TODO: Parse, use received data
+                        const image_url = URL.createObjectURL(data);
+                        const camera_dom_obj = document.getElementById("CameraStream");
+                        if(!camera_dom_obj || camera_dom_obj.nodeName !== "IMG")
+                        {
+                            console.error("** Wrong HTML element selected for stream display");
+                        }
+                        else
+                        {
+                            if(camera_dom_obj.dataset.URL)
+                            {
+                                URL.revokeObjectURL(camera_dom_obj.dataset.URL);
+                            }
+                            camera_dom_obj.setAttribute("src", image_url);
+                            camera_dom_obj.dataset.URL = image_url;
+                        }
+                    })
+                    .catch((error) =>
+                    {
+                        console.error("** Failed to do HTTP GET request: " + error);
+                    })
+            }
         </script>
     </head>
     <body>
         <div class="SuperParent">
             <div class="ColumnElem">
                 <div class="CameraContainer">
-                    <div class="VideoContainer"></div>
+                    <div class="VideoContainer"><img id="CameraStream" src="" width="640" height="480"></div>
                     <div class="CaptureButtonContainer">
-                        <button type="button" id="CaptureButton" class="CaptureButton">Capture</button>
+                        <button type="button" id="CaptureButton" class="CaptureButton" onclick="FetchJPGCapture()">Capture</button>
                     </div>
                 </div>
                 <div class="MotorControlContainer">

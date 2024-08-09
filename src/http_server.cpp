@@ -1,7 +1,9 @@
 #include "../include/HTTPServer/http_server.h"
+#include "../include/Camera/camera.h"
 
-// Server handle
-httpd_handle_t server_handle = NULL;
+// Index server handle
+httpd_handle_t page_server_handle = NULL;
+httpd_handle_t capture_server_handle = NULL;
 
 // HTML page string
 String index_text;
@@ -32,11 +34,12 @@ void StartHTTPServer()
     // Instantiate default server configuration object (struct)
     httpd_config_t server_config = HTTPD_DEFAULT_CONFIG();
 
-    // Empty the server handle
-    server_handle = NULL;
+    // Empty the page and capture server handles
+    page_server_handle = NULL;
+    capture_server_handle = NULL;
 
-    // Start the httpd server
-    esp_err_t result = httpd_start(&server_handle, &server_config);
+    // Start the page httpd server
+    esp_err_t result = httpd_start(&page_server_handle, &server_config);
 
     // Definition of URI handlers
 
@@ -56,20 +59,67 @@ void StartHTTPServer()
         .user_ctx = NULL
     };
 
-    switch(result)
+    httpd_uri_t capture_uri
     {
-        case ESP_OK:
-            // Register URI handlers
+        .uri = "/jpg_capture",
+        .method = HTTP_GET,
+        .handler = CaptureHandler,
+        .user_ctx = NULL 
+    };
+
+    // Declare page handlers
+    httpd_uri_t page_handlers[] = { motor_axis_uri, index_uri };
+    // Register page URI handlers
+    InitializeServer(result, page_handlers, 2, PAGE);
+    PrintResultCode(result);
+
+    if(result == ESP_OK)
+    {
+        // Declare capture handlers
+        httpd_uri_t capture_handlers[] = { capture_uri };
+        // Set capture server port to 81
+        server_config.server_port++;
+        server_config.ctrl_port++;
+        // Start capture server instance
+        result = httpd_start(&capture_server_handle, &server_config);
+        // Register capture URI handlers
+        InitializeServer(result, capture_handlers, 1, CAPTURE);
+        PrintResultCode(result);
+        // Print the page URL
+        if(result == ESP_OK)
+        {
             SerialIO::Print(conn_url_msg);
             Serial.println(WiFi.localIP());
-            httpd_register_uri_handler(server_handle, &motor_axis_uri);
-            httpd_register_uri_handler(server_handle, &index_uri);
-            break;
-        default:
-            break;
+        }
     }
+}
 
-    PrintResultCode(result);
+void InitializeServer(esp_err_t &result, httpd_uri_t handlers[], size_t count, const ServerHandleFlag &handle_flag)
+{
+    if(result == ESP_OK)
+    {
+        RegisterHandlers(handlers, count, handle_flag);
+    }
+}
+
+void RegisterHandlers(httpd_uri_t handlers[], size_t count, const ServerHandleFlag &handle_flag)
+{
+    for(size_t i = 0; i < count; i++)
+    {
+        switch (handle_flag)
+        {
+            case PAGE:
+                httpd_register_uri_handler(page_server_handle, &handlers[i]);
+                break;
+
+            case CAPTURE:
+                httpd_register_uri_handler(capture_server_handle, &handlers[i]);
+                break;
+        
+            default:
+                break;
+        }
+    }
 }
 
 void PrintRecvResult(httpd_req_t* req, size_t recv_size)
@@ -160,38 +210,6 @@ void ExtractAxisValues(char *http_msg_body)
     }
 }
 
-esp_err_t AxisHandler(httpd_req_t* req)
-{
-    // Initialize HTTP body message buffer
-    char http_msg_body[motor_val_msg_size];
-
-    // Truncate if request content_len > sizeof(http_msg_body)
-    size_t recv_size = min(req->content_len, sizeof(http_msg_body));
-
-    // Receive content data from request
-    int recv = httpd_req_recv(req, http_msg_body, recv_size);
-    http_msg_body[recv] = 0;
-
-    if(recv > 0)
-    {
-        // Print HTTP message contents to Serial (debugging reasons)
-        //SerialIO::PrintLn(print_http_req_msg);
-        //SerialIO::PrintLn(http_msg_body);
-        ExtractAxisValues(http_msg_body);
-    }
-    else
-    {
-        // Print the recv error code
-        PrintRecvResult(req, recv);
-        return ESP_FAIL;
-    }
-
-    // Sending response to the client
-    int resp_res = httpd_resp_send(req, motor_resp_msg, HTTPD_RESP_USE_STRLEN);
-    PrintRespResult(req, resp_res);
-    return resp_res;
-}
-
 esp_err_t IndexHandler(httpd_req_t* req)
 {
     String html_page;
@@ -201,3 +219,4 @@ esp_err_t IndexHandler(httpd_req_t* req)
     PrintRespResult(req, resp_res);
     return resp_res;
 }
+

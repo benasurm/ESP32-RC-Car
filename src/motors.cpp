@@ -1,5 +1,4 @@
 #include "../include/Motors/motors.h"
-#include "../include/HTTPServer/http_server.h"
 
 // Motor GPIO pins (camera is away from observer's perspective)
 
@@ -133,4 +132,36 @@ void ApplyPWMValues()
             analogWrite(RF_GPIO, std::abs(MotorPWMValues.x));          
         }
     }
+}
+
+esp_err_t AxisHandler(httpd_req_t* req)
+{
+    // Initialize HTTP body message buffer
+    char http_msg_body[motor_val_msg_size];
+
+    // Truncate if request content_len > sizeof(http_msg_body)
+    size_t recv_size = min(req->content_len, sizeof(http_msg_body));
+
+    // Receive content data from request
+    int recv = httpd_req_recv(req, http_msg_body, recv_size);
+    http_msg_body[recv] = 0;
+
+    if(recv > 0)
+    {
+        // Print HTTP message contents to Serial (debugging reasons)
+        //SerialIO::PrintLn(print_http_req_msg);
+        //SerialIO::PrintLn(http_msg_body);
+        ExtractAxisValues(http_msg_body);
+    }
+    else
+    {
+        // Print the recv error code
+        PrintRecvResult(req, recv);
+        return ESP_FAIL;
+    }
+
+    // Sending response to the client
+    int resp_res = httpd_resp_send(req, motor_resp_msg, HTTPD_RESP_USE_STRLEN);
+    PrintRespResult(req, resp_res);
+    return resp_res;
 }
