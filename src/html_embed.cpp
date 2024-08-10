@@ -40,8 +40,8 @@ char const *root_html = R"raw(<!DOCTYPE html>
 
             .VideoContainer
             {
-                width: 640px;
-                height: 480px;
+                width: 600px;
+                height: 600px;
                 background-color: black;
                 flex-basis: 640px;
             }
@@ -259,18 +259,16 @@ char const *root_html = R"raw(<!DOCTYPE html>
                         // TODO: Parse, use received data
                         const image_url = URL.createObjectURL(data);
                         const camera_dom_obj = document.getElementById("CameraStream");
-                        if(!camera_dom_obj || camera_dom_obj.nodeName !== "IMG")
+                        if(!camera_dom_obj || camera_dom_obj.nodeName !== "CANVAS")
                         {
                             console.error("** Wrong HTML element selected for stream display");
                         }
                         else
                         {
-                            if(camera_dom_obj.dataset.URL)
-                            {
-                                URL.revokeObjectURL(camera_dom_obj.dataset.URL);
-                            }
-                            camera_dom_obj.setAttribute("src", image_url);
+                            //camera_dom_obj.setAttribute("src", image_url);
                             camera_dom_obj.dataset.URL = image_url;
+                            DrawRotatedImg(camera_dom_obj.dataset.URL);
+                            URL.revokeObjectURL(camera_dom_obj.dataset.URL);
                         }
                     })
                     .catch((error) =>
@@ -278,13 +276,43 @@ char const *root_html = R"raw(<!DOCTYPE html>
                         console.error("** Failed to do HTTP GET request: " + error);
                     })
             }
+
+            function DrawRotatedImg(url)
+            {
+                console.log(url);
+                const video_canvas = document.getElementById("CameraStream");
+                if(video_canvas.getContext)
+                {
+                    var image = new Image();
+                    image.src = url;
+
+                    image.onload = () =>
+                    {
+                        const h = image.height;
+                        const offset = (image.width - h) / 2;
+                        const ctx = video_canvas.getContext("2d");
+
+                        ctx.save();
+
+                        ctx.translate(0, image.height);
+                        ctx.rotate(-Math.PI / 2);
+                        ctx.drawImage(image, offset, 0, h, h, 0, 0, h, h);    
+
+                        ctx.restore();            
+                    }
+                }
+                else
+                {
+                    console.error("** Canvas not supported by this browser.");
+                }
+            }
         </script>
     </head>
     <body>
         <div class="SuperParent">
             <div class="ColumnElem">
                 <div class="CameraContainer">
-                    <div class="VideoContainer"><img id="CameraStream" src="" width="640" height="480"></div>
+                    <div class="VideoContainer"><canvas id="CameraStream" width="600" height="600">Nothing to see here</canvas></div>
                     <div class="CaptureButtonContainer">
                         <button type="button" id="CaptureButton" class="CaptureButton" onclick="FetchJPGCapture()">Capture</button>
                     </div>
