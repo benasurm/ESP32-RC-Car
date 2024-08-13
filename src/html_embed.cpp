@@ -40,8 +40,8 @@ char const *root_html = R"raw(<!DOCTYPE html>
 
             .VideoContainer
             {
-                width: 600px;
-                height: 600px;
+                width: 480px;
+                height: 480px;
                 background-color: black;
                 flex-basis: 640px;
             }
@@ -228,7 +228,7 @@ char const *root_html = R"raw(<!DOCTYPE html>
                 MotorSpeedRequest();
             }
 
-            function FetchJPGCapture()
+            function FetchJPGCapture(option)
             {
                 var domain = window.location.origin;
                 var port = 81;
@@ -259,8 +259,7 @@ char const *root_html = R"raw(<!DOCTYPE html>
                     })
                     .then((data) =>
                     {
-                        // TODO: Parse, use received data
-                        const image_url = URL.createObjectURL(data);
+                        const image_url = window.URL.createObjectURL(data);
                         const camera_dom_obj = document.getElementById("CameraStream");
                         if(!camera_dom_obj || camera_dom_obj.nodeName !== "CANVAS")
                         {
@@ -268,13 +267,28 @@ char const *root_html = R"raw(<!DOCTYPE html>
                         }
                         else
                         {
-                            //camera_dom_obj.setAttribute("src", image_url);
                             camera_dom_obj.dataset.URL = image_url;
-                            DrawRotatedImg(camera_dom_obj.dataset.URL);
-                            URL.revokeObjectURL(camera_dom_obj.dataset.URL);
-
-                            conn_fail = 0;
-                            setTimeout(FetchJPGCapture(true), 10);
+                            // Option possible values:
+                            // 0 - for downloading JPG capture
+                            // 1 - for streaming JPG captures
+                            if(option === 0)
+                            {
+                                DownloadJPG(camera_dom_obj.dataset.URL);
+                            }
+                            else if(option === 1)
+                            {
+                                DrawRotatedImg(camera_dom_obj.dataset.URL);
+                                conn_fail = 0;
+                                setTimeout(FetchJPGCapture(1), 10);
+                            }
+                            else
+                            {
+                                throw new ErrorEvent("** Wrong JPG capture fetch option");
+                            }
+                            setTimeout(() =>
+                            {
+                                window.URL.revokeObjectURL(camera_dom_obj.dataset.URL);
+                            }, 100);
                         }
                     })
                     .catch((error) =>
@@ -282,7 +296,7 @@ char const *root_html = R"raw(<!DOCTYPE html>
                         conn_fail++;
                         if(conn_fail < 5)
                         {
-                            setTimeout(FetchJPGCapture(true), 1000);
+                            setTimeout(FetchJPGCapture(1), 1000);
                         }
                         else
                         {
@@ -322,15 +336,25 @@ char const *root_html = R"raw(<!DOCTYPE html>
                     console.error("** Canvas not supported by this browser.");
                 }
             }
+
+            function DownloadJPG(image_url)
+            {
+                var a = document.createElement("a");
+                a.href = image_url;
+                a.setAttribute("download", "image.jpeg");
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
         </script>
     </head>
-    <body onload="FetchJPGCapture()">
+    <body onload="FetchJPGCapture(1)">
         <div class="SuperParent">
             <div class="ColumnElem">
                 <div class="CameraContainer">
                     <div class="VideoContainer"><canvas id="CameraStream" width="480" height="480">Nothing to see here</canvas></div>
                     <div class="CaptureButtonContainer">
-                        <button type="button" id="CaptureButton" class="CaptureButton">Capture</button>
+                        <button type="button" id="CaptureButton" class="CaptureButton" onclick="FetchJPGCapture(0)">Capture</button>
                     </div>
                 </div>
                 <div class="MotorControlContainer">
@@ -378,7 +402,6 @@ char const *root_html = R"raw(<!DOCTYPE html>
         </div>   
     </body>
 </html>)raw";
-
 
 
 void InitializeHTMLForm(String &html_embed)
