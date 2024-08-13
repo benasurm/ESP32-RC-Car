@@ -233,6 +233,7 @@ char const *root_html = R"raw(<!DOCTYPE html>
                 var domain = window.location.origin;
                 var port = 81;
                 var url = domain + ":" + port + "/jpg_capture";
+                var conn_fail = 0;
                 const jpg_capture_req = fetch(
                     url,
                     {
@@ -245,12 +246,14 @@ char const *root_html = R"raw(<!DOCTYPE html>
                     {
                         if(!response.ok)
                         {
-                            console.error("** Error in HTTP GET request: " + response.status)
+                            console.error("** Error in HTTP GET request: " + response.status);
+                            return Promise.reject("HTTP Error");
                         }
                         const content_type = response.headers.get('Content-Type');
                         if(!content_type || !content_type.includes('image/jpeg'))
                         {
                             console.error("** HTTP JPEG GET invalid response type: {$content_type}");
+                            return Promise.reject("Invalid content type");
                         }
                         return response.blob();
                     })
@@ -269,11 +272,24 @@ char const *root_html = R"raw(<!DOCTYPE html>
                             camera_dom_obj.dataset.URL = image_url;
                             DrawRotatedImg(camera_dom_obj.dataset.URL);
                             URL.revokeObjectURL(camera_dom_obj.dataset.URL);
+
+                            conn_fail = 0;
+                            setTimeout(FetchJPGCapture(true), 10);
                         }
                     })
                     .catch((error) =>
                     {
-                        console.error("** Failed to do HTTP GET request: " + error);
+                        conn_fail++;
+                        if(conn_fail < 5)
+                        {
+                            setTimeout(FetchJPGCapture(true), 1000);
+                        }
+                        else
+                        {
+                            console.error("** Failed to do HTTP GET request: " + error);
+                            return;
+                        }
+                        
                     })
             }
 
@@ -308,13 +324,13 @@ char const *root_html = R"raw(<!DOCTYPE html>
             }
         </script>
     </head>
-    <body>
+    <body onload="FetchJPGCapture()">
         <div class="SuperParent">
             <div class="ColumnElem">
                 <div class="CameraContainer">
-                    <div class="VideoContainer"><canvas id="CameraStream" width="600" height="600">Nothing to see here</canvas></div>
+                    <div class="VideoContainer"><canvas id="CameraStream" width="480" height="480">Nothing to see here</canvas></div>
                     <div class="CaptureButtonContainer">
-                        <button type="button" id="CaptureButton" class="CaptureButton" onclick="FetchJPGCapture()">Capture</button>
+                        <button type="button" id="CaptureButton" class="CaptureButton">Capture</button>
                     </div>
                 </div>
                 <div class="MotorControlContainer">

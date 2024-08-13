@@ -1,27 +1,30 @@
 #include "../include/WiFiConnection/wifi_conn.h"
 
-void ReadNetInfo(NetInfo &net_info)
+const u8_t max_fail_count = 5;
+u8_t fail_count;
+
+void ReadNetInfo()
 {
     // Reading the network SSID and password
     SerialIO::PrintLn(enter_ssid_msg);
-    SerialIO::ReadLn(net_info.ssid);
+    SerialIO::ReadLn(curr_net_info.ssid);
 
     SerialIO::PrintLn(enter_passwd_msg);
-    SerialIO::ReadLn(net_info.passwd);
+    SerialIO::ReadLn(curr_net_info.passwd);
 }
 
 void ConnectToWifi()
 {
-    // Declaring SSID and password char array structure
-    NetInfo curr_net_info;
     // Reading network info from user
-    ReadNetInfo(curr_net_info);
+    ReadNetInfo();
+    // Connection fail counter
+    fail_count = 0;
 
     // Checking if no connection is already established
     if(WiFi.status() != WL_NO_SHIELD)
     {
         SerialIO::PrintLn(already_conn_msg);
-        return;
+        WiFi.disconnect();
     }
 
     // Initialization of WiFi library's network settings
@@ -50,6 +53,12 @@ void ConnectToWifi()
             break;
             default:
             break;
+        }
+        fail_count++;
+        if(fail_count == max_fail_count)
+        {
+            SerialIO::PrintLn(try_again_msg);
+            ConnectToWifi();
         }
     }
     

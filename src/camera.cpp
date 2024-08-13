@@ -72,7 +72,7 @@ camera_config_t camera_config =
     .ledc_channel = LEDC_CHANNEL_0,
     .pixel_format = PIXFORMAT_JPEG,
     .frame_size = FRAMESIZE_VGA, // 640x480 resolution
-    .jpeg_quality = 15,
+    .jpeg_quality = 35,
     .fb_count = 1,
     .fb_location = CAMERA_FB_IN_DRAM,
     .grab_mode = CAMERA_GRAB_LATEST
@@ -106,10 +106,10 @@ void PrintInitRes(esp_err_t &init_res)
 
 size_t ConvertTokB(size_t &len)
 {
-    return len / 8000;
+    return len / 1000;
 }
 
-size_t ConvertToms(size_t &begin, size_t &end)
+size_t ConvertToms(int64_t &begin, int64_t &end)
 {
     return (end - begin) / 1000;
 }
@@ -154,7 +154,7 @@ esp_err_t CaptureHandler(httpd_req_t *req)
             return ESP_FAIL;
     }
 
-    // Setting 'Content-Type' header to 'image/jpeg' 
+    // Setting 'Access-Control-Allow-Origin' header to '*' 
     resp_res = httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     // Checking result of operation
     switch (resp_res)
@@ -200,7 +200,7 @@ esp_err_t CaptureHandler(httpd_req_t *req)
     int64_t end_time = esp_timer_get_time();
 
     // Format and print result message
-    ESP_LOGI(TAG, "JPG packet sent: %uKb; %u ms", ConvertTokB(fb_len), ConvertToms(begin_time, end_time));
+    Serial.printf("JPG packet sent: %uKb; %u ms", ConvertTokB(fb_len), ConvertToms(begin_time, end_time));
     return ESP_OK;
 }
 
