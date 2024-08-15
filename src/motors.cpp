@@ -43,6 +43,7 @@ void SetNewPWMValues(FieldValue field_val[], int len)
         }
     }
     // Apply the newly read PWM values
+    PrintPWMValues();
     ApplyPWMValues();
 }
 
@@ -71,20 +72,56 @@ void PrintPWMValues()
     SerialIO::PrintEmptyLn();
 }
 
-int SmallerPWMVal()
+/*int SmallerPWMVal()
 {
-    int new_val = 100 + std::abs(MotorPWMValues.y) - std::abs(MotorPWMValues.x) / 2;
+    int new_val = std::abs(MotorPWMValues.y) - std::abs(MotorPWMValues.x) / 2;
     return std::min(max_pwm, new_val);
 }
 
 int GreaterPWMVal()
 {
-    int new_val = 100 + std::abs(MotorPWMValues.y) + std::abs(MotorPWMValues.x) / 2; 
+    int new_val = std::abs(MotorPWMValues.y) + std::abs(MotorPWMValues.x) / 2; 
     return std::min(max_pwm, new_val);
+}*/
+
+int PWMBounds(int i)
+{
+    return std::min(std::max(i, -max_pwm), max_pwm);
+}
+
+void SetLSpeed(int spd)
+{
+    spd = PWMBounds(spd);
+    analogWrite(LF_GPIO, std::max(spd, 0));
+    analogWrite(LB_GPIO, std::max(-spd, 0));
+}
+
+void SetRSpeed(int spd)
+{
+    spd = PWMBounds(spd);
+    analogWrite(RF_GPIO, std::max(spd, 0));
+    analogWrite(RB_GPIO, std::max(-spd, 0));
 }
 
 void ApplyPWMValues()
 {
+    int lspd, rspd;
+    lspd = rspd = MotorPWMValues.y;
+
+    if(MotorPWMValues.y >= 0)
+    {
+        lspd += MotorPWMValues.x / 2;
+        rspd -= MotorPWMValues.x / 2;
+    }
+    else
+    {
+        lspd -= MotorPWMValues.x / 2;
+        rspd += MotorPWMValues.x / 2;
+    }
+
+    SetLSpeed(lspd);
+    SetRSpeed(rspd);
+/*
     if(MotorPWMValues.y < 0)
     {
         analogWrite(LF_GPIO, 0);
@@ -117,21 +154,22 @@ void ApplyPWMValues()
     }
     else if(MotorPWMValues.y == 0)
     {
-        analogWrite(LF_GPIO, 0);
-        analogWrite(RF_GPIO, 0);
-        analogWrite(LB_GPIO, 0);
-        analogWrite(RB_GPIO, 0);
         if(MotorPWMValues.x >= 0)
         {
+            analogWrite(LB_GPIO, 0);
+            analogWrite(RF_GPIO, 0);
             analogWrite(LF_GPIO, MotorPWMValues.x);
             analogWrite(RB_GPIO, MotorPWMValues.x);
         }
         else
         {
+            analogWrite(LF_GPIO, 0);
+            analogWrite(RB_GPIO, 0);
             analogWrite(LB_GPIO, std::abs(MotorPWMValues.x));
             analogWrite(RF_GPIO, std::abs(MotorPWMValues.x));          
         }
     }
+    */
 }
 
 esp_err_t AxisHandler(httpd_req_t* req)

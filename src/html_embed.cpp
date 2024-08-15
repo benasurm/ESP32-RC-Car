@@ -164,10 +164,6 @@ char const *root_html = R"raw(<!DOCTYPE html>
                 {
                     throw "** Undefined values passed as arguments";
                 }
-                if(!Number.isInteger(x_value) || !Number.isInteger(y_value))
-                {
-                    throw "** Non-int values passed as arguments";
-                }
                 const motor_post_req = fetch(
                     '/motor_axis',
                     {
@@ -679,14 +675,13 @@ char const *root_html = R"raw(<!DOCTYPE html>
             });
         </script>
     </head>
-    <!-- onload="FetchJPGCapture(1)" -->
-    <body>
+    <body onload="FetchJPGCapture(1)">
         <div class="SuperParent">
             <div class="ColumnElem">
                 <div class="CameraContainer">
                     <div class="VideoContainer"><canvas id="CameraStream" width="480" height="480">Nothing to see here</canvas></div>
                     <div class="CaptureButtonContainer">
-                        <button type="button" id="CaptureButton" class="CaptureButton">Capture</button>
+                        <button type="button" id="CaptureButton" class="CaptureButton" onclick="FetchJPGCapture(option)">Capture</button>
                     </div>
                 </div>
                 <div class="MotorControlContainer">

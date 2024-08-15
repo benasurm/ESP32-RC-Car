@@ -16,8 +16,8 @@ const char try_again_msg[] = "** Try connecting to network again";
 // Declaring SSID and password char array structure
 struct
 {
-    char ssid[msg_size];
-    char passwd[msg_size];
+    char ssid[msg_size] = "Sensor-Fi";
+    char passwd[msg_size] = "Bmp/@J*r;5_35U#W";
 } curr_net_info;
 
 void ReadNetInfo();

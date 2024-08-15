@@ -134,10 +134,9 @@ esp_err_t CaptureHandler(httpd_req_t *req)
     {
         SerialIO::PrintLn(err_500_msg);
         httpd_resp_send_500(req);
-        esp_camera_fb_return(fb);
         return ESP_FAIL;
     }
-    SerialIO::PrintLn(capture_ok_msg);
+    //SerialIO::PrintLn(capture_ok_msg);
 
     // Setting 'Content-Type' header to 'image/jpeg' 
     resp_res = httpd_resp_set_type(req, img_ct);
@@ -145,7 +144,7 @@ esp_err_t CaptureHandler(httpd_req_t *req)
     switch (resp_res)
     {
         case ESP_OK:
-            SerialIO::PrintLn(hdr_set_ok_msg);
+            //SerialIO::PrintLn(hdr_set_ok_msg);
             break;
         default:
             PrintResultCode(resp_res);
@@ -160,7 +159,7 @@ esp_err_t CaptureHandler(httpd_req_t *req)
     switch (resp_res)
     {
         case ESP_OK:
-            SerialIO::PrintLn(hdr_set_ok_msg);
+            //SerialIO::PrintLn(hdr_set_ok_msg);
             break;
         default:
             PrintResultCode(resp_res);
@@ -175,7 +174,7 @@ esp_err_t CaptureHandler(httpd_req_t *req)
         switch (resp_res)
         {
             case ESP_OK:
-                SerialIO::PrintLn(pkt_sent_ok_msg);
+                //SerialIO::PrintLn(pkt_sent_ok_msg);
                 fb_len = fb->len;
                 break;
             default:
@@ -200,7 +199,7 @@ esp_err_t CaptureHandler(httpd_req_t *req)
     int64_t end_time = esp_timer_get_time();
 
     // Format and print result message
-    Serial.printf("JPG packet sent: %uKb; %u ms", ConvertTokB(fb_len), ConvertToms(begin_time, end_time));
+    //Serial.printf("JPG packet sent: %uKb; %u ms", ConvertTokB(fb_len), ConvertToms(begin_time, end_time));
     return ESP_OK;
 }
 
