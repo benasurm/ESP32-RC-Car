@@ -203,7 +203,7 @@ char const *root_html = R"raw(<!DOCTYPE html>
                         method: 'GET'   
                     }
                 );
-
+                var begin_time = Date.now();
                 jpg_capture_req
                     .then((response) =>
                     {
@@ -241,6 +241,7 @@ char const *root_html = R"raw(<!DOCTYPE html>
                             else if(option === 1)
                             {
                                 DrawRotatedImg(camera_dom_obj.dataset.URL);
+                                console.log(1000 / Date.now() - begin_time + " fps");
                                 conn_fail = 0;
                                 setTimeout(FetchJPGCapture(1), 10);
                             }
