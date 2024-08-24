@@ -16,7 +16,7 @@ void ReadNetInfo()
 void ConnectToWifi()
 {
     // Reading network info from user
-    //ReadNetInfo();
+    ReadNetInfo();
     // Connection fail counter
     fail_count = 0;
 

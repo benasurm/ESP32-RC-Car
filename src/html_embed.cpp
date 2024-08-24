@@ -41,9 +41,11 @@ char const *root_html = R"raw(<!DOCTYPE html>
             .VideoContainer
             {
                 width: 480px;
-                height: 480px;
+                height: 520px;
                 background-color: black;
                 flex-basis: 640px;
+                display: flex;
+                flex-direction: column;
             }
 
             .CaptureButton
@@ -136,8 +138,25 @@ char const *root_html = R"raw(<!DOCTYPE html>
                 width: 20%;
                 height: 60px;
             }
+
+            #FPSText
+            {
+                width: 100%;
+                height: fit-content;
+                text-align: left;
+                justify-content: center;
+                color: white;
+                font-size: 32px;
+                margin-left: 10px;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
         </style>
         <script>
+            const max_frame_count = 3;
+            var frame_count = 0;
+            var total_ms = 0;
+            var curr_fps = -1;
+
             function IsUndefinedOrNull(elem)
             {
                 return !(typeof(elem) != 'undefined' && elem != null);
@@ -241,7 +260,20 @@ char const *root_html = R"raw(<!DOCTYPE html>
                             else if(option === 1)
                             {
                                 DrawRotatedImg(camera_dom_obj.dataset.URL);
-                                console.log(1000 / Date.now() - begin_time + " fps");
+                                frame_count++;
+                                if(frame_count >= max_frame_count)
+                                {
+                                    total_ms /= 1000;
+                                    curr_fps = frame_count / total_ms;
+                                    frame_count = 0;
+                                    total_ms = 0;
+                                }
+                                else
+                                {
+                                    frame_count++;
+                                    total_ms += Date.now() - begin_time;
+                                }
+                                UpdateFPSText(curr_fps.toFixed());
                                 conn_fail = 0;
                                 setTimeout(FetchJPGCapture(1), 10);
                             }
@@ -269,6 +301,15 @@ char const *root_html = R"raw(<!DOCTYPE html>
                         }
                         
                     })
+            }
+
+            function UpdateFPSText(curr_fps)
+            {
+                const label = document.getElementById('FPSText');
+                if(!IsUndefinedOrNull(label))
+                {
+                    label.innerHTML = "FPS: " + curr_fps;
+                }
             }
 
             function DrawRotatedImg(url)
@@ -680,7 +721,10 @@ char const *root_html = R"raw(<!DOCTYPE html>
         <div class="SuperParent">
             <div class="ColumnElem">
                 <div class="CameraContainer">
-                    <div class="VideoContainer"><canvas id="CameraStream" width="480" height="480">Nothing to see here</canvas></div>
+                    <div class="VideoContainer">
+                        <canvas id="CameraStream" width="480" height="480">Nothing to see here</canvas>
+                        <div id="FPSText">FPS: </div>
+                    </div>
                     <div class="CaptureButtonContainer">
                         <button type="button" id="CaptureButton" class="CaptureButton" onclick="FetchJPGCapture(option)">Capture</button>
                     </div>
@@ -719,8 +763,8 @@ char const *root_html = R"raw(<!DOCTYPE html>
             {   
                 if(JoyStickData.x_value !== PWMJoy.GetX() || JoyStickData.y_value !== PWMJoy.GetY())
                 {
-                    JoyStickData.x_value = PWMJoy.GetX();
-                    JoyStickData.y_value = PWMJoy.GetY();
+                    JoyStickData.x_value = parseInt(PWMJoy.GetX());
+                    JoyStickData.y_value = parseInt(PWMJoy.GetY());
                     UpdateValueLabels(JoyStickData.x_value, JoyStickData.y_value);
                     MotorSpeedRequest(JoyStickData.x_value, JoyStickData.y_value);
                 }
