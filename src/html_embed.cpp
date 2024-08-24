@@ -746,9 +746,6 @@ char const *root_html = R"raw(<!DOCTYPE html>
                             </div>
                         </div>
                     </div>
-                    <div class="ControlButtonContainer">
-                        <button type="button" class="StopButton" id="StopButton">Disconnect from RC Car</button>
-                    </div>
                 </div>
             </div>
             <div id="ExtraSpace"></div>
